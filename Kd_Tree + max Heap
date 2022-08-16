@@ -1,0 +1,211 @@
+#include <iostream>
+#include <bits/stdc++.h>
+#include <vector>
+// size  of the data points
+#define SIZE 10000000
+// dimension of the points
+#define D 100
+
+using namespace std;
+// Queue to store 10 min
+priority_queue<int> pq;
+int c = 0;
+class BST
+{
+    int data[D];
+    BST *left, *right;
+
+public:
+    // Default constructor.
+    BST();
+
+    // Parameterized constructor.
+    BST(int *);
+
+    // Insert function.
+    BST *Insert(BST *, int *);
+    BST *Insertrec(BST *, int *, int);
+    // Find distance near query point
+    void distance(BST *, int *);
+    // Search function to go to a cell having points around query points
+    bool Searchrec(BST *, int *, int);
+    bool Search(BST *, int *);
+
+    // Inorder traversal.
+    void Inorder(BST *, int *);
+};
+
+// Default Constructor definition.
+BST ::BST()
+    : data{}, left(NULL), right(NULL)
+{
+}
+
+// Parameterized Constructor definition.
+BST ::BST(int value[D])
+{
+    for (int i = 0; i < D; i++)
+    {
+        data[i] = value[i];
+    }
+    left = right = NULL;
+}
+
+// Insert function definition.
+BST *BST ::Insertrec(BST *root, int value[D], int depth)
+{
+    if (!root)
+    {
+        // Insert the first node, if root is NULL.
+        return new BST(value);
+    }
+    unsigned cd = depth % D;
+    // Insert data.
+    if (value[cd] >= root->data[cd])
+    {
+        // Insert right node data, if the 'value'
+        // to be inserted is greater than or equal to 'root' node data.
+        root->right = Insertrec(root->right, value, depth + 1);
+    }
+    else if (value[cd] < root->data[cd])
+    {
+        // Insert left node data, if the 'value'
+        // to be inserted is smaller than 'root' node data.
+        root->left = Insertrec(root->left, value, depth + 1);
+    }
+
+    // Return 'root' node, after insertion.
+    return root;
+}
+// 2nd Insert function to start track of dimension
+BST *BST ::Insert(BST *root, int value[D])
+{
+    return Insertrec(root, value, 0);
+}
+
+// Distance funtion definition
+void BST::distance(BST *root, int Q[D])
+{
+    int sum = 0;
+    int x;
+    // iterate through all dimension of a point
+    for (int j = 0; j < D; j++)
+    {
+        // calculate distance
+        x = (int)(root->data[j] - Q[j]);
+        sum += x * x;
+    }
+    // Putting 10 element to maxheap
+    // Size of maxheap is kept constant to 10 element
+    if (pq.size() != 10)
+        pq.push(sum);
+    // checking element to heap if top is large
+    else if (pq.top() > sum)
+    {
+        pq.pop();
+        pq.push(sum);
+    }
+}
+// Inorder traversal function.
+// This gives data in sorted order.
+void BST ::Inorder(BST *root, int Q[D])
+{
+    if (root == NULL)
+    {
+        return;
+    }
+    Inorder(root->left, Q);
+    distance(root, Q);
+    /*cout<<c++<<" (";
+    for(int i=0; i<D; i++ )
+    {
+       cout<< root->data[i]<<",";
+    }
+    cout<<")"<<endl;*/
+    Inorder(root->right, Q);
+}
+
+// Search function definition
+bool BST ::Searchrec(BST *root, int Q[D], int dim)
+{
+    if (!root)
+    {
+        // if root is NULL, return
+        return false;
+    }
+    unsigned cd = dim % D;
+    //
+    if (cd == 13)
+    {
+        // start inorder traversal to calculate distance
+        Inorder(root, Q);
+    }
+    if (Q[cd] >= root->data[cd])
+    {
+        //Query point in right subtree
+        return Searchrec(root->right, Q, dim + 1);
+    }
+    //Query poinnt in left subtree
+    return Searchrec(root->left, Q, dim + 1);
+}
+// 2nd search function to start search for 0 depth
+bool BST ::Search(BST *root, int Q[D])
+{
+    return Searchrec(root, Q, 0);
+}
+
+// Driver code
+int main()
+{
+    //Generator for normal distribution
+    default_random_engine generator;
+    normal_distribution<float> distribution(0.0, 100.0);
+    BST b;
+    BST *root = NULL;
+    // creating mean as node so tree is balanced
+    int mean[D];
+    // mean value
+    for (int i = 0; i < D; i++)
+    {
+        mean[i] = 0;
+    }
+    // root node create
+    root = b.Insert(root, mean);
+    // create Kd Tree
+    cout << "KD Tree start building" << endl;
+    int x[D]; // D dimension point
+    for (int i = 0; i < SIZE; i++)
+    {
+        for (int j = 0; j < D; j++)
+        {
+            x[j] = (int)distribution(generator);
+        }
+        // putting d dimension array in node
+        b.Insert(root, x);
+    }
+    cout << "KD Tree build complete" << endl;
+    // Get query point
+    int Q[D];
+    for (int j = 0; j < D; j++)
+    {
+        Q[j] = (int)distribution(generator);
+    }
+
+    cout << "clock start" << endl;
+    // creating clock
+    clock_t start, end;
+    start = clock();
+    b.Search(root, Q);
+    // b.Inorder(root,Q);
+
+    // Display min K value
+    for (int i = 0; i < 10; i++)
+    {
+        cout << pq.top() << endl;
+        pq.pop();
+    }
+    end = clock();
+    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+    cout << "Time taken to Execute " << fixed << time_taken << setprecision(5) << " sec" << endl;
+    return 0;
+}
